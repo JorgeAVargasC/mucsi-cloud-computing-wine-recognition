@@ -6,6 +6,8 @@ Clasificador de vinos (`model/wine-model.joblib`, entrenado en `model/wine_recog
 
 Requiere Docker Desktop abierto. `docker-compose.yml` levanta el broker (`kafka`) y un contenedor de un solo uso (`kafka-init`) que crea los topics `wine-requests` y `wine-predictions` cuando el broker está listo.
 
+> **Git Bash en Windows:** antepón `MSYS_NO_PATHCONV=1` a los comandos `docker exec` (o usa `//opt/...`); si no, Git Bash convierte `/opt/...` en `C:/Program Files/Git/opt/...`.
+
 | Paso | Comando |
 |---|---|
 | Levantar el broker y crear los topics | `docker compose up -d` |
