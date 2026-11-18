@@ -51,7 +51,3 @@ def predict(features: dict) -> dict:
     # numpy.int64 is not JSON/protobuf serializable, so cast to int
     return {"label": int(model.predict(row)[0])}
 
-
-if __name__ == "__main__":
-    print("Training columns:", list(model.feature_names_in_))
-    print("Prediction:", predict(SAMPLE))

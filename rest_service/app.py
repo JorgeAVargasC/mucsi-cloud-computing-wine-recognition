@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import FastAPI, Query
 from pydantic import BaseModel, Field
 
-from predictor import SAMPLE, predict
+from model.predictor import SAMPLE, predict
 
 app = FastAPI(title="Wine Recognition API")
 

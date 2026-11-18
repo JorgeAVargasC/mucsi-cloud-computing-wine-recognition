@@ -4,9 +4,8 @@ from concurrent import futures
 
 import grpc
 
-import wine_pb2
-import wine_pb2_grpc
-from predictor import FEATURES, predict
+from grpc_service import wine_pb2, wine_pb2_grpc
+from model.predictor import FEATURES, predict
 
 GRPC_PORT = 50051
 
