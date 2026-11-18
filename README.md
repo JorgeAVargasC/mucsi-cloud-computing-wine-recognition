@@ -36,4 +36,44 @@ Salida esperada: `{'label': 1}` en REST, gRPC y Kafka. Swagger: http://localhost
 
 ## Evidencias
 
-`evidence/`
+Las 3 vías devuelven la misma predicción:
+
+![test_client.py](evidence/05-test-client-output.png)
+
+Swagger, `GET /predict`:
+
+![Swagger](evidence/09-rest-swagger-response.png)
+
+## Anexos
+
+### A1 · Kafka levantado con Docker Compose
+
+![Kafka levantado con Docker Compose](evidence/01-kafka-compose-up.png)
+
+### A2 · Servicio REST arrancado
+
+![Servicio REST arrancado](evidence/02-rest-service-running.png)
+
+### A3 · Servidor gRPC arrancado
+
+![Servidor gRPC arrancado](evidence/03-grpc-server-running.png)
+
+### A4 · Worker de Kafka arrancado
+
+![Worker de Kafka arrancado](evidence/04-kafka-worker-running.png)
+
+### A5 · Log REST de la petición
+
+![Log REST de la petición](evidence/06-rest-request-log.png)
+
+### A6 · Log gRPC de la petición
+
+![Log gRPC de la petición](evidence/07-grpc-request-log.png)
+
+### A7 · Log del worker de Kafka
+
+![Log del worker de Kafka](evidence/08-kafka-request-log.png)
+
+### A8 · Contenedor Kafka en Docker Desktop
+
+![Contenedor Kafka en Docker Desktop](evidence/10-docker-kafka-container.png)
