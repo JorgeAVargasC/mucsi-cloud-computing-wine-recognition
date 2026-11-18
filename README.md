@@ -1,24 +1,39 @@
 # Wine Recognition · Microservicios
 
-Clasificador de vinos (`model/wine-model.joblib`, entrenado en `model/wine_recognition.ipynb`) expuesto por **REST**, **gRPC** y **Kafka**.
+Clasificador de vinos expuesto por **REST**, **gRPC** y **Kafka**.
 
-## Kafka (Docker Compose)
-
-Requiere Docker Desktop abierto. `docker-compose.yml` levanta un broker Kafka de un nodo. Los topics `wine-requests` y `wine-predictions` se crean solos la primera vez que se usan.
-
-> **Git Bash en Windows:** antepón `MSYS_NO_PATHCONV=1` a los comandos `docker exec` (o usa `//opt/...`); si no, Git Bash convierte `/opt/...` en `C:/Program Files/Git/opt/...`.
-
-| Paso | Comando |
+| Carpeta | Contenido |
 |---|---|
-| Levantar el broker | `docker compose up -d` |
-| Ver el estado | `docker compose ps` |
-| Listar los topics | `docker exec kafka /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092` |
-| Apagar (conserva los mensajes) | `docker compose stop` |
-| Borrar todo | `docker compose down` |
+| `model/` | modelo, notebook y `predictor.py` (compartido por los 3 servicios) |
+| `rest_service/` | FastAPI · `GET /predict` |
+| `grpc_service/` | `wine.proto`, stubs y servidor |
+| `kafka_service/` | worker: `wine-requests` → `wine-predictions` |
+| `test_client.py` | prueba las 3 vías |
 
-### Probar a mano
+## Instalar
+
+```bash
+./install-requirements.sh
+source .venv/Scripts/activate
+```
+
+## Ejecutar
 
 | Terminal | Comando |
 |---|---|
-| Productor (escribe un mensaje por línea) | `docker exec -it kafka /opt/kafka/bin/kafka-console-producer.sh --topic wine-requests --bootstrap-server localhost:9092` |
-| Consumidor (lee desde el inicio) | `docker exec -it kafka /opt/kafka/bin/kafka-console-consumer.sh --topic wine-requests --from-beginning --bootstrap-server localhost:9092` |
+| 1 | `docker compose up -d` |
+| 2 | `uvicorn rest_service.app:app --port 8000` |
+| 3 | `python -m grpc_service.server` |
+| 4 | `python -m kafka_service.worker` |
+| 5 | `python test_client.py` |
+
+Salida esperada: `{'label': 1}` en REST, gRPC y Kafka. Swagger: http://localhost:8000/docs
+
+## Notas
+
+- Stubs de gRPC: `./generate-stubs.sh` (solo si cambia `wine.proto`).
+- Windows: el broker se anuncia en `127.0.0.1` (no `localhost`, que va por IPv6 y falla); `kafka-python==2.3.1` con `api_version=(3, 9)`.
+
+## Evidencias
+
+`evidence/`
