@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import wine_pb2 as wine__pb2
+from grpc_service import wine_pb2 as grpc__service_dot_wine__pb2
 
 GRPC_GENERATED_VERSION = '1.85.3'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in wine_pb2_grpc.py depends on'
+        + ' but the generated code in grpc_service/wine_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,8 +36,8 @@ class WinePredictorStub:
         """
         self.Predict = channel.unary_unary(
                 '/wine.WinePredictor/Predict',
-                request_serializer=wine__pb2.WineFeatures.SerializeToString,
-                response_deserializer=wine__pb2.Prediction.FromString,
+                request_serializer=grpc__service_dot_wine__pb2.WineFeatures.SerializeToString,
+                response_deserializer=grpc__service_dot_wine__pb2.Prediction.FromString,
                 _registered_method=True)
 
 
@@ -56,8 +56,8 @@ def add_WinePredictorServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Predict': grpc.unary_unary_rpc_method_handler(
                     servicer.Predict,
-                    request_deserializer=wine__pb2.WineFeatures.FromString,
-                    response_serializer=wine__pb2.Prediction.SerializeToString,
+                    request_deserializer=grpc__service_dot_wine__pb2.WineFeatures.FromString,
+                    response_serializer=grpc__service_dot_wine__pb2.Prediction.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -85,8 +85,8 @@ class WinePredictor:
             request,
             target,
             '/wine.WinePredictor/Predict',
-            wine__pb2.WineFeatures.SerializeToString,
-            wine__pb2.Prediction.FromString,
+            grpc__service_dot_wine__pb2.WineFeatures.SerializeToString,
+            grpc__service_dot_wine__pb2.Prediction.FromString,
             options,
             channel_credentials,
             insecure,
