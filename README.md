@@ -1,5 +1,7 @@
 # Wine Recognition · Microservicios
 
+**[Jorge Andrés Vargas Cordoba](https://github.com/JorgeAVargasC)** · Cloud Computing · MUCSI, Universidad de Deusto
+
 Clasificador de vinos expuesto por **REST**, **gRPC** y **Kafka**.
 
 | Carpeta | Contenido |
