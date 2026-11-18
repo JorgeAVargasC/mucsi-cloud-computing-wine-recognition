@@ -2,7 +2,7 @@ fastapi
 uvicorn
 grpcio
 grpcio-tools
-kafka-python
+kafka-python==2.3.1
 requests
 pandas==3.1.0
 scikit-learn==1.9.1

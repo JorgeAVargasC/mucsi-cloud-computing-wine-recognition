@@ -4,14 +4,14 @@ Clasificador de vinos (`model/wine-model.joblib`, entrenado en `model/wine_recog
 
 ## Kafka (Docker Compose)
 
-Requiere Docker Desktop abierto. `docker-compose.yml` levanta el broker (`kafka`) y un contenedor de un solo uso (`kafka-init`) que crea los topics `wine-requests` y `wine-predictions` cuando el broker está listo.
+Requiere Docker Desktop abierto. `docker-compose.yml` levanta un broker Kafka de un nodo. Los topics `wine-requests` y `wine-predictions` se crean solos la primera vez que se usan.
 
 > **Git Bash en Windows:** antepón `MSYS_NO_PATHCONV=1` a los comandos `docker exec` (o usa `//opt/...`); si no, Git Bash convierte `/opt/...` en `C:/Program Files/Git/opt/...`.
 
 | Paso | Comando |
 |---|---|
-| Levantar el broker y crear los topics | `docker compose up -d` |
-| Ver el estado | `docker compose ps -a` (`kafka-init` debe salir con `Exited (0)`) |
+| Levantar el broker | `docker compose up -d` |
+| Ver el estado | `docker compose ps` |
 | Listar los topics | `docker exec kafka /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092` |
 | Apagar (conserva los mensajes) | `docker compose stop` |
 | Borrar todo | `docker compose down` |
