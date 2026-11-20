@@ -1,11 +1,14 @@
 """Loads the wine model once and exposes a single predict function."""
 
+import os
 from pathlib import Path
 
 import joblib
 import pandas as pd
 
-MODEL_PATH = Path(__file__).resolve().parent / "wine-model.joblib"
+# In Docker the model is mounted as a volume, so its location comes from the environment
+DEFAULT_MODEL_PATH = Path(__file__).resolve().parent / "wine-model.joblib"
+MODEL_PATH = Path(os.getenv("MODEL_PATH", DEFAULT_MODEL_PATH))
 
 # Loaded once, when the module is imported
 model = joblib.load(MODEL_PATH)
