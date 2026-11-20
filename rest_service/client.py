@@ -1,10 +1,12 @@
 """Requests a wine prediction from the REST service."""
 
+import os
+
 import requests
 
 from model.predictor import SAMPLE
 
-REST_URL = "http://localhost:8000"
+REST_URL = os.getenv("REST_URL", "http://localhost:8000")
 
 
 def predict_rest(features: dict) -> dict:

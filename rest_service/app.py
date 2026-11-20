@@ -1,11 +1,17 @@
 """REST microservice that exposes the wine model through FastAPI."""
 
+import os
 from typing import Annotated
+
+import uvicorn
 
 from fastapi import FastAPI, Query
 from pydantic import BaseModel, Field
 
 from model.predictor import SAMPLE, predict
+
+REST_HOST = os.getenv("REST_HOST", "0.0.0.0")
+REST_PORT = int(os.getenv("REST_PORT", "8000"))
 
 app = FastAPI(title="Wine Recognition API")
 
@@ -44,3 +50,7 @@ def health_check() -> dict:
 def predict_wine(features: Annotated[WineFeatures, Query()]) -> Prediction:
     """Predicts the wine class from the measurements sent as query parameters."""
     return Prediction(**predict(features.model_dump()))
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host=REST_HOST, port=REST_PORT)

@@ -1,5 +1,6 @@
 """gRPC microservice that exposes the wine model through a unary call."""
 
+import os
 from concurrent import futures
 
 import grpc
@@ -7,7 +8,7 @@ import grpc
 from grpc_service import wine_pb2, wine_pb2_grpc
 from model.predictor import FEATURES, predict
 
-GRPC_PORT = 50051
+GRPC_PORT = int(os.getenv("GRPC_PORT", "50051"))
 
 
 class WinePredictor(wine_pb2_grpc.WinePredictorServicer):
