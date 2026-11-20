@@ -6,7 +6,6 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-# In Docker the model is mounted as a volume, so its location comes from the environment
 DEFAULT_MODEL_PATH = Path(__file__).resolve().parent / "wine-model.joblib"
 MODEL_PATH = Path(os.getenv("MODEL_PATH", DEFAULT_MODEL_PATH))
 

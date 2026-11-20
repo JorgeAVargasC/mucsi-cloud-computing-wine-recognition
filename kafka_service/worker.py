@@ -20,7 +20,7 @@ CONNECT_WAIT_SECONDS = int(os.getenv("KAFKA_CONNECT_WAIT_SECONDS", "2"))
 
 
 def connect(create):
-    """Calls create() until the broker answers, because the container may start before Kafka is ready."""
+    """Retries until the broker answers: the container may start before Kafka is ready."""
     for attempt in range(1, CONNECT_RETRIES + 1):
         try:
             return create()
