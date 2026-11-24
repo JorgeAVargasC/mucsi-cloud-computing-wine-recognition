@@ -15,8 +15,9 @@ Clasificador de vinos expuesto por **REST**, **gRPC** y **Kafka**.
 ## Instalar
 
 ```bash
-./install-requirements.sh
+python -m venv .venv
 source .venv/Scripts/activate
+pip install -r requirements.txt
 ```
 
 ## Ejecutar sin Docker
@@ -33,49 +34,7 @@ Salida esperada: `{'label': 1}` en REST, gRPC y Kafka. Swagger: http://localhost
 
 ## Docker
 
-Cada servicio tiene su imagen (`wine-rest`, `wine-grpc`, `wine-kafka-worker`, versión `1.0.0`) y Kafka usa `apache/kafka:3.9.1`. Se construyen desde la raíz del repo.
-
-| Script | Qué hace |
-|---|---|
-| `./build-all.sh` | `docker pull` de Kafka y `docker build` de las 3 imágenes propias |
-| `./run-all.sh` | crea la red `wine-net` y lanza Kafka, REST, gRPC y el worker |
-| `./stop-all.sh` | para los contenedores y elimina la red |
-
-```bash
-./build-all.sh
-./run-all.sh
-KAFKA_BOOTSTRAP_SERVERS=127.0.0.1:29092 python test_client.py
-./stop-all.sh
-```
-
-- El modelo no está dentro de las imágenes: se monta como volumen de solo lectura en `/models` y se localiza con `MODEL_PATH`. Cambiar el modelo no requiere reconstruir.
-- Dentro de la red, los servicios se encuentran por alias: `kafka:9092`. Desde el equipo, el cliente usa `127.0.0.1:29092`, que es el segundo listener de Kafka.
-- Los scripts y el `docker-compose.yml` usan los mismos nombres de contenedor (`kafka`, `wine-rest`, ...): no los ejecutes a la vez. Haz `./stop-all.sh` o `docker compose down` antes de cambiar de uno a otro.
-
-### Variables de entorno
-
-| Variable | Default | Servicio |
-|---|---|---|
-| `REST_HOST` / `REST_PORT` | `0.0.0.0` / `8000` | REST |
-| `GRPC_PORT` | `50051` | gRPC |
-| `KAFKA_BOOTSTRAP_SERVERS` | `kafka:9092` en la imagen, `127.0.0.1:9092` en local | worker y cliente |
-| `REQUESTS_TOPIC` / `PREDICTIONS_TOPIC` | `wine-requests` / `wine-predictions` | worker y cliente |
-| `CONSUMER_GROUP` | `wine-predictor` | worker |
-| `KAFKA_CONNECT_RETRIES` / `KAFKA_CONNECT_WAIT_SECONDS` | `30` / `2` | worker |
-| `MODEL_PATH` | `/models/wine-model.joblib` en la imagen | los 3 servicios |
-| `REST_URL` / `GRPC_TARGET` | `http://localhost:8000` / `localhost:50051` | clientes |
-
-La lista completa está en `.env.example`.
-
-## Docker Compose
-
-`docker-compose.yml` levanta todo el sistema: ZooKeeper, Kafka, Kafdrop y los 3 servicios. Equivale a los 3 scripts anteriores.
-
-| Script | Compose |
-|---|---|
-| `./build-all.sh` | `docker compose build` |
-| `./run-all.sh` | `docker compose up -d` |
-| `./stop-all.sh` | `docker compose down` |
+`docker-compose.yml` levanta todo el sistema: ZooKeeper, Kafka, Kafdrop y los 3 servicios (REST, gRPC y worker), cada uno con su `Dockerfile`.
 
 ```bash
 docker compose build
@@ -93,13 +52,30 @@ docker compose down
 | `grpc` | `wine-grpc` | `50051` |
 | `kafka-worker` | `wine-kafka-worker` | ninguno |
 
+- El modelo no está dentro de las imágenes: se monta como volumen de solo lectura en `/models` y se localiza con `MODEL_PATH`. Cambiar el modelo no requiere reconstruir.
+- `.env` centraliza los puertos, los topics, el grupo del worker y `KAFKA_HOST_IP` (IP para clientes en otros equipos). Compose lo lee solo.
 - Rutas de build relativas (`context: .`): funciona igual en cualquier equipo.
-- Los servicios se encuentran por nombre dentro de la red `wine-recognition_default` (`kafka:9092`).
+- Dentro de la red `wine-recognition_default` los servicios se encuentran por nombre (`kafka:9092`). Desde el equipo, el cliente usa `127.0.0.1:29092`.
 - Kafka tiene `healthcheck` y el worker y Kafdrop esperan a que esté `healthy`.
 - Los datos de Kafka y ZooKeeper se guardan en `Kafka/kafka-storage/` (ignorada por Git), así que sobreviven a `docker compose down`.
-- Para clientes en otros equipos, define `KAFKA_HOST_IP` en un `.env` (ver `.env.example`); por defecto `127.0.0.1`.
 
-Diferencias con el enunciado:
+### Variables de entorno
+
+| Variable | Default | Servicio |
+|---|---|---|
+| `REST_HOST` / `REST_PORT` | `0.0.0.0` / `8000` | REST |
+| `GRPC_PORT` | `50051` | gRPC |
+| `KAFKA_BOOTSTRAP_SERVERS` | `kafka:9092` en la imagen, `127.0.0.1:9092` en local | worker y cliente |
+| `REQUESTS_TOPIC` / `PREDICTIONS_TOPIC` | `wine-requests` / `wine-predictions` | worker y cliente |
+| `CONSUMER_GROUP` | `wine-predictor` | worker |
+| `KAFKA_CONNECT_RETRIES` / `KAFKA_CONNECT_WAIT_SECONDS` | `30` / `2` | worker |
+| `MODEL_PATH` | `/models/wine-model.joblib` en la imagen | los 3 servicios |
+| `REST_URL` / `GRPC_TARGET` | `http://localhost:8000` / `localhost:50051` | clientes |
+
+Sin Docker se leen del entorno del proceso. En los contenedores, el `Dockerfile` trae los valores por defecto y `docker-compose.yml` los toma de `.env`.
+
+### Diferencias con el enunciado
+
 - Kafka publica `29092` y `29093`, no `22181:2181`: ese puerto ya es de ZooKeeper.
 - `EXTERNAL_SAME_HOST` se anuncia como `127.0.0.1:29092` y no `localhost`, que en Windows resuelve primero a IPv6 y falla.
 - La IP `192.168.5.242` del ejemplo se sustituye por `KAFKA_HOST_IP`.
@@ -119,40 +95,6 @@ Las 3 vías devuelven la misma predicción:
 Swagger, `GET /predict`:
 
 ![Swagger](evidence/09-rest-swagger-response.png)
-
-## Evidencias Docker
-
-Construcción de las imágenes (`./build-all.sh`):
-
-![build-all](evidence/docker/01-build-all.png)
-
-Lanzamiento de los contenedores (`./run-all.sh`):
-
-![run-all](evidence/docker/02-run-all.png)
-
-Contenedores en ejecución y worker de Kafka escuchando:
-
-![Contenedores](evidence/docker/03-containers-status.png)
-
-Red `wine-net` con los 4 contenedores:
-
-![Red](evidence/docker/04-network-inspect.png)
-
-Docker Desktop:
-
-![Docker Desktop](evidence/docker/05-docker-desktop.png)
-
-Prueba con `test_client.py` contra los contenedores:
-
-![test_client](evidence/docker/06-test-client.png)
-
-Logs de los tres servicios tras la prueba:
-
-![Logs](evidence/docker/07-service-logs.png)
-
-Parada de los contenedores y borrado de la red (`./stop-all.sh`):
-
-![stop-all](evidence/docker/08-stop-all.png)
 
 ## Evidencias Docker Compose
 

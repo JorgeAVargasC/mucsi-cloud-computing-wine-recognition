@@ -1,8 +1,6 @@
 .venv
 __pycache__
 __pycache__/
-
-# Local environment variables
 .env
 
 # Kafka and ZooKeeper runtime data

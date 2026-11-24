@@ -5,9 +5,9 @@ services:
     image: confluentinc/cp-zookeeper:7.6.1
     container_name: zookeeper
     ports:
-      - "22181:2181"
+      - "${ZOOKEEPER_HOST_PORT}:${ZOOKEEPER_PORT}"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_PORT}
       ZOOKEEPER_TICK_TIME: 2000
     volumes:
       - ./Kafka/kafka-storage/zookeeper/data:/var/lib/zookeeper/data
@@ -19,15 +19,14 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "29092:29092"
-      - "29093:29093"
+      - "${KAFKA_SAME_HOST_PORT}:${KAFKA_SAME_HOST_PORT}"
+      - "${KAFKA_OTHER_HOST_PORT}:${KAFKA_OTHER_HOST_PORT}"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: EXTERNAL_SAME_HOST://:29092,EXTERNAL_DIFFERENT_HOST://:29093,INTERNAL://:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:${ZOOKEEPER_PORT}
+      KAFKA_LISTENERS: EXTERNAL_SAME_HOST://:${KAFKA_SAME_HOST_PORT},EXTERNAL_DIFFERENT_HOST://:${KAFKA_OTHER_HOST_PORT},INTERNAL://:${KAFKA_PORT}
       # 127.0.0.1 instead of localhost: on Windows localhost resolves to IPv6 first and times out
-      # KAFKA_HOST_IP: address of this machine for clients on other hosts (port 29093)
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL_SAME_HOST://127.0.0.1:29092,EXTERNAL_DIFFERENT_HOST://${KAFKA_HOST_IP:-127.0.0.1}:29093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:${KAFKA_PORT},EXTERNAL_SAME_HOST://127.0.0.1:${KAFKA_SAME_HOST_PORT},EXTERNAL_DIFFERENT_HOST://${KAFKA_HOST_IP}:${KAFKA_OTHER_HOST_PORT}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL_SAME_HOST:PLAINTEXT,EXTERNAL_DIFFERENT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -40,7 +39,7 @@ services:
       - ./Kafka/kafka-storage/kafka/data:/var/lib/kafka/data
       - ./Kafka/kafka-storage/kafka/secrets:/etc/kafka/secrets
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:${KAFKA_PORT}"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -53,52 +52,47 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "9000:9000"
+      - "${KAFDROP_PORT}:${KAFDROP_PORT}"
     environment:
-      KAFKA_BROKERCONNECT: kafka:9092
+      SERVER_PORT: ${KAFDROP_PORT}
+      KAFKA_BROKERCONNECT: kafka:${KAFKA_PORT}
 
   rest:
-    build:
-      context: .
-      dockerfile: rest_service/Dockerfile
+    build: { context: ., dockerfile: rest_service/Dockerfile }
     image: wine-rest:1.0.0
     container_name: wine-rest
     ports:
-      - "8000:8000"
+      - "${REST_PORT}:${REST_PORT}"
     environment:
-      REST_PORT: 8000
       MODEL_PATH: /models/wine-model.joblib
+      REST_PORT: ${REST_PORT}
     volumes:
       - ./model:/models:ro
 
   grpc:
-    build:
-      context: .
-      dockerfile: grpc_service/Dockerfile
+    build: { context: ., dockerfile: grpc_service/Dockerfile }
     image: wine-grpc:1.0.0
     container_name: wine-grpc
     ports:
-      - "50051:50051"
+      - "${GRPC_PORT}:${GRPC_PORT}"
     environment:
-      GRPC_PORT: 50051
       MODEL_PATH: /models/wine-model.joblib
+      GRPC_PORT: ${GRPC_PORT}
     volumes:
       - ./model:/models:ro
 
   kafka-worker:
-    build:
-      context: .
-      dockerfile: kafka_service/Dockerfile
+    build: { context: ., dockerfile: kafka_service/Dockerfile }
     image: wine-kafka-worker:1.0.0
     container_name: wine-kafka-worker
     depends_on:
       kafka:
         condition: service_healthy
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      REQUESTS_TOPIC: wine-requests
-      PREDICTIONS_TOPIC: wine-predictions
-      CONSUMER_GROUP: wine-predictor
       MODEL_PATH: /models/wine-model.joblib
+      KAFKA_BOOTSTRAP_SERVERS: kafka:${KAFKA_PORT}
+      REQUESTS_TOPIC: ${REQUESTS_TOPIC}
+      PREDICTIONS_TOPIC: ${PREDICTIONS_TOPIC}
+      CONSUMER_GROUP: ${CONSUMER_GROUP}
     volumes:
       - ./model:/models:ro
