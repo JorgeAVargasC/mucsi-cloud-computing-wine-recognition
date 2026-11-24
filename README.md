@@ -50,7 +50,7 @@ KAFKA_BOOTSTRAP_SERVERS=127.0.0.1:29092 python test_client.py
 
 - El modelo no está dentro de las imágenes: se monta como volumen de solo lectura en `/models` y se localiza con `MODEL_PATH`. Cambiar el modelo no requiere reconstruir.
 - Dentro de la red, los servicios se encuentran por alias: `kafka:9092`. Desde el equipo, el cliente usa `127.0.0.1:29092`, que es el segundo listener de Kafka.
-- `docker-compose.yml` es el Kafka de la entrega anterior y no se usa aquí. Ejecuta `docker compose down` antes de `run-all.sh`: ambos nombran `kafka` a su contenedor.
+- Los scripts y el `docker-compose.yml` usan los mismos nombres de contenedor (`kafka`, `wine-rest`, ...): no los ejecutes a la vez. Haz `./stop-all.sh` o `docker compose down` antes de cambiar de uno a otro.
 
 ### Variables de entorno
 
@@ -66,6 +66,44 @@ KAFKA_BOOTSTRAP_SERVERS=127.0.0.1:29092 python test_client.py
 | `REST_URL` / `GRPC_TARGET` | `http://localhost:8000` / `localhost:50051` | clientes |
 
 La lista completa está en `.env.example`.
+
+## Docker Compose
+
+`docker-compose.yml` levanta todo el sistema: ZooKeeper, Kafka, Kafdrop y los 3 servicios. Equivale a los 3 scripts anteriores.
+
+| Script | Compose |
+|---|---|
+| `./build-all.sh` | `docker compose build` |
+| `./run-all.sh` | `docker compose up -d` |
+| `./stop-all.sh` | `docker compose down` |
+
+```bash
+docker compose build
+docker compose up -d
+KAFKA_BOOTSTRAP_SERVERS=127.0.0.1:29092 python test_client.py
+docker compose down
+```
+
+| Servicio | Contenedor | Puerto |
+|---|---|---|
+| `zookeeper` | `zookeeper` | `22181:2181` |
+| `kafka` | `kafka` | `29092` (este equipo), `29093` (otros equipos); `9092` solo dentro de la red |
+| `kafdrop` | `kafdrop` | `9000` · http://localhost:9000 |
+| `rest` | `wine-rest` | `8000` |
+| `grpc` | `wine-grpc` | `50051` |
+| `kafka-worker` | `wine-kafka-worker` | ninguno |
+
+- Rutas de build relativas (`context: .`): funciona igual en cualquier equipo.
+- Los servicios se encuentran por nombre dentro de la red `wine-recognition_default` (`kafka:9092`).
+- Kafka tiene `healthcheck` y el worker y Kafdrop esperan a que esté `healthy`.
+- Los datos de Kafka y ZooKeeper se guardan en `Kafka/kafka-storage/` (ignorada por Git), así que sobreviven a `docker compose down`.
+- Para clientes en otros equipos, define `KAFKA_HOST_IP` en un `.env` (ver `.env.example`); por defecto `127.0.0.1`.
+
+Diferencias con el enunciado:
+- Kafka publica `29092` y `29093`, no `22181:2181`: ese puerto ya es de ZooKeeper.
+- `EXTERNAL_SAME_HOST` se anuncia como `127.0.0.1:29092` y no `localhost`, que en Windows resuelve primero a IPv6 y falla.
+- La IP `192.168.5.242` del ejemplo se sustituye por `KAFKA_HOST_IP`.
+- Imágenes fijas: `confluentinc/cp-zookeeper:7.6.1`, `confluentinc/cp-kafka:7.6.1` y `obsidiandynamics/kafdrop:4.0.2`.
 
 ## Notas
 
@@ -115,6 +153,52 @@ Logs de los tres servicios tras la prueba:
 Parada de los contenedores y borrado de la red (`./stop-all.sh`):
 
 ![stop-all](evidence/docker/08-stop-all.png)
+
+## Evidencias Docker Compose
+
+Stack de Kafka levantado (`docker compose up -d zookeeper kafka kafdrop`):
+
+![Stack de Kafka levantado (`docker compose up -d zookeeper kafka kafdrop`)](evidence/compose/01-compose-up.png)
+
+ZooKeeper, Kafka y Kafdrop en Docker Desktop:
+
+![ZooKeeper, Kafka y Kafdrop en Docker Desktop](evidence/compose/02-docker-desktop.png)
+
+Kafdrop con el broker:
+
+![Kafdrop con el broker](evidence/compose/03-kafdrop-broker.png)
+
+Construcción de las imágenes (`docker compose build`):
+
+![Construcción de las imágenes (`docker compose build`)](evidence/compose/04-compose-build.png)
+
+Los 6 contenedores levantados (`docker compose up -d`):
+
+![Los 6 contenedores levantados (`docker compose up -d`)](evidence/compose/05-compose-up-all.png)
+
+Proyecto `wine-recognition` en Docker Desktop:
+
+![Proyecto `wine-recognition` en Docker Desktop](evidence/compose/06-docker-desktop-all.png)
+
+Red `wine-recognition_default`:
+
+![Red `wine-recognition_default`](evidence/compose/07-network-ls.png)
+
+Prueba con `test_client.py`:
+
+![Prueba con `test_client.py`](evidence/compose/08-test-client.png)
+
+Logs de los tres servicios tras la prueba:
+
+![Logs de los tres servicios tras la prueba](evidence/compose/09-service-logs.png)
+
+Kafdrop con los topics `wine-requests` y `wine-predictions`:
+
+![Kafdrop con los topics `wine-requests` y `wine-predictions`](evidence/compose/10-kafdrop-topics.png)
+
+Swagger, `GET /predict`:
+
+![Swagger, `GET /predict`](evidence/compose/11-swagger-response.png)
 
 ## Anexos
 
