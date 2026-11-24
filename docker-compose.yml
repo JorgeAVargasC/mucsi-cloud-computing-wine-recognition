@@ -55,3 +55,49 @@ services:
       - "9000:9000"
     environment:
       KAFKA_BROKERCONNECT: kafka:9092
+
+  rest:
+    build:
+      context: .
+      dockerfile: rest_service/Dockerfile
+    image: wine-rest:1.0.0
+    container_name: wine-rest
+    ports:
+      - "8000:8000"
+    environment:
+      REST_PORT: 8000
+      MODEL_PATH: /models/wine-model.joblib
+    volumes:
+      - ./model:/models:ro
+
+  grpc:
+    build:
+      context: .
+      dockerfile: grpc_service/Dockerfile
+    image: wine-grpc:1.0.0
+    container_name: wine-grpc
+    ports:
+      - "50051:50051"
+    environment:
+      GRPC_PORT: 50051
+      MODEL_PATH: /models/wine-model.joblib
+    volumes:
+      - ./model:/models:ro
+
+  kafka-worker:
+    build:
+      context: .
+      dockerfile: kafka_service/Dockerfile
+    image: wine-kafka-worker:1.0.0
+    container_name: wine-kafka-worker
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REQUESTS_TOPIC: wine-requests
+      PREDICTIONS_TOPIC: wine-predictions
+      CONSUMER_GROUP: wine-predictor
+      MODEL_PATH: /models/wine-model.joblib
+    volumes:
+      - ./model:/models:ro
